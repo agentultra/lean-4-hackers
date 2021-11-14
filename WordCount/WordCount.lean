@@ -7,24 +7,30 @@ structure WordCount where
 instance : ToString WordCount where
   toString wc := s!"Characters: {wc.charCount} / Words: {wc.wordCount} / Lines: {wc.lineCount}"
 
-def countChar (c : UInt8) (wc : WordCount) : WordCount :=
-  if c != 32
-  then { wc with charCount := wc.charCount + 1, inWord := true }
+def countChar (wc : WordCount) (c : UInt8) : WordCount :=
+  let wc := { wc with charCount := wc.charCount + 1 }
+  if c == 32
+  then { wc with inWord := false }
+  else if c == 10
+  then { wc with
+          lineCount := wc.lineCount + 1
+          inWord := false }
   else if wc.inWord == true
-       then { wc with charCount := wc.charCount + 1, wordCount := wc.wordCount + 1, inWord := false }
-       else { wc with charCount := wc.charCount + 1 }
+       then wc
+       else { wc with wordCount := wc.wordCount + 1,
+                      inWord := true }
 
-partial def loop (wc : WordCount) (s : IO.FS.Stream) : IO Unit := do
-  let stop ← s.isEof
+partial def IOfoldl {α} (f : α → UInt8 → α) (x : α) : IO α := do
+  let stdin ← IO.getStdin
+  let stop ← stdin.isEof
   if !stop
   then
-    let cs ← s.read 5
-    let wc' := List.foldr countChar wc cs.toList
-    loop wc' s
+    let cs ← stdin.read 5
+    let x' := List.foldl f x cs.toList
+    IOfoldl f x'
   else
-    IO.println $ toString wc
+    return x
 
 def main : IO Unit := do
-  let stdin ← IO.getStdin
-  let wc := WordCount.mk 0 0 0 false
-  loop wc stdin
+  let wc <- IOfoldl countChar (WordCount.mk 0 1 0 false)
+  IO.println wc
