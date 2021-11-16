@@ -19,12 +19,12 @@ together.
 However you install `elan`, once it is on your path you can install
 Lean 4:
 
-    $ elan toolchain install leanprover/lean4:stable
+    $ elan toolchain install leanprover/lean4:nightly
 
 If this is successful you should be able to run:
 
     $ lean --version
-    Lean (version 4.0.0-m2, commit 26dda3f63d88, Release)
+    Lean (version 4.0.0-nightly-2021-11-12, commit 781a28b8f4ba, Release)
 
 Which displays the version of Lean and the git commit it was built
 from.
@@ -49,18 +49,13 @@ editors it's worth using one or the other to try Lean out.
 As is customary we will begin with printing, _Hello, world!_ to the
 console.  I use this as a quick check to make sure the toolchain is
 set up properly and everything works as expected.  Start by creating a
-new directory for your project:
+new package:
 
-    $ mkdir HelloWorld && cd HelloWorld
+    $ lake new HelloWorld && cd HelloWorld
 
-Then initialize a new Lean package using the `leanpkg` tool that
-`elan` installed for us with the toolchain:
-
-    $ leanpkg init HelloWorld
-
-If you have `git` installed it will setup a repository for you, a
-`.gitignore` file, a package manifest file, `leanpkg.toml`, and a
-source file, `HelloWorld.lean`.
+This will create a new directory with a new `git` repository
+initialized, a package configuration file, toolchain file, a
+`Main.lean`, and `HelloWorld.lean`.
 
 Note that the `.gitignore` file may need to be modified to contain:
 
@@ -68,8 +63,14 @@ Note that the `.gitignore` file may need to be modified to contain:
 
 Take a look at `HelloWorld.lean`:
 
+    def hello := "world"
+
+It contains a single definition.  Now open up `Main.lean`:
+
+    import HelloWorld
+
     def main : IO Unit :=
-      IO.println "Hello, world!"
+      IO.println s!"Hello, {hello}!"
 
 If you've ever seen a Haskell tutorial this should look familiar.
 Every Lean program that will be compiled to a native binary requires
@@ -77,14 +78,16 @@ an entry-point function named, `main`.  This function has to have the
 type: `IO Unit`.
 
 If you have used Lean 3 you might notice that this is rather
-different.  We no longer need to import anything.  Also we have `IO`
-and `Unit` with caps instead of `io unit`.  And finally we have
-`IO.println` instead of `put_str`.  They're essentially different
+different.  We no longer need to import `system.io` or "open" it.
+Also we have `IO` and `Unit` with caps instead of `io unit`.  We even
+have this nice substitution string, `s!"World, {hello}!"` instead of
+concatenating strings.  And finally we have `IO.println` instead of
+`put_str`.  There's enough here to show that these are very different
 languages.
 
 To compile and run this program head to your shell and run:
 
-    $ leanpkg build bin
+    $ lake build
 
 After some output, if everything was successful, you should be able to
 run our first Lean 4 program:
