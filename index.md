@@ -99,3 +99,69 @@ If something didn't work the best place to reach out is probably on
 the Zulip chat server.  The Lean community is very active there and if
 someone hasn't already encountered your problem in the `lean4` stream
 there is probably someone who can help.
+
+## Hello, {name}! ##
+
+The next step is to modify our `HelloWorld` example so that we can
+prompt the user for some input and print out a message to them
+containing it.  Open up `HelloWorld.lean` and add:
+
+    def hello2 : IO String := do
+      IO.println "What is your name? "
+      let stdin ← IO.getStdin
+      let name ← IO.FS.Stream.getLine stdin
+      pure s!"Hello, {name.trim}!"
+
+Then modify `Main.lean`:
+
+    def main : IO Unit := do
+      IO.println s!"Hello, {hello}!"
+      let greeting ← hello2
+      IO.println $ greeting
+
+Compile with:
+
+    $ lake build
+
+And run it again:
+
+    $ ./build/bin/HelloWorld
+    Hello, world!
+    What is your name?
+    Random J. Hacker
+    Hello, Random J. Hacker!
+
+Excellent.  We can get input from the user.
+
+## What am I compiling? ##
+
+Take a peek inside the `build/` directory and you will find:
+
+    bin/
+    ir/
+    lib/
+
+`bin/` contains the fully compiled native binary produced by your
+platform's C tool-chain (for the platforms supported by Lean this
+should be one of Clang or GCC) for the specified target(s) in your
+package.
+
+`lib/` contains the `*.olean` files.  These are binary files used to
+cache parsed `*.lean` files with extra metadata about the definitions,
+modules, etc.
+
+`ir/` this is probably the more interesting part if you like to peek
+into the guts of what is being output by the Lean compiler: _C code_.
+
+If you take a peek at a few of the `.c` files you will see calls to
+functions such as `lean_inc` and `lean_dec`.  These come from Lean's
+run-time library and are an artifact of how Lean does garbage
+collection: reference counting.  You will see these interspersed with
+the various functions that map to our `hello` and `hello2` functions.
+
+The scheme used here is from the _Counting Immutable Beans_ paper by
+the language's inventor and his collaborators and is well worth a
+read.
+
+Bonus: check out the `lean4` source and poke around in
+`src/include/lean4/lean4.h` and `src/runtime/io.cpp`.
