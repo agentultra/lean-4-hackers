@@ -54,12 +54,16 @@ new package:
     $ lake new HelloWorld && cd HelloWorld
 
 This will create a new directory with a new `git` repository
-initialized, a package configuration file, toolchain file, a
-`Main.lean`, and `HelloWorld.lean`.
+initialized, a package configuration file called `lakefile.lean`,
+toolchain file, a `Main.lean`, and `HelloWorld.lean`.
 
-Note that the `.gitignore` file may need to be modified to contain:
+The `lakefile.lean` is the package configuration file written in an
+_embedded domain specific language_ defined by
+[Lake](https://githubplus.com/leanprover/lake "Lake build tool").  It
+lets you specify the usual paths and build targets.
 
-    build/
+The toolchain file tells `elan` which toolchain to use to build the
+project.
 
 Take a look at `HelloWorld.lean`:
 
