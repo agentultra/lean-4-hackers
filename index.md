@@ -169,3 +169,51 @@ read.
 
 Bonus: check out the `lean4` source and poke around in
 `src/include/lean4/lean4.h` and `src/runtime/io.cpp`.
+
+## Word Counting ##
+
+Let's jump into a more substantial project and see what Lean 4 can do.
+We're going to see if we can implement a small Unix utility: `wc`.
+This little program reads a stream of input and counts words,
+characters, and lines.
+
+A word is contiguous series of non-whitespace characters.
+
+A line is a contiguous series of non-carriage return characters.
+
+We'll limit ourselves to the ASCII character set to keep things
+simple.
+
+First things first, create a new directory and initiate a project with
+Lake:
+
+    $ mkdir WordCount && cd WordCound && lake init
+
+The first thing we will need is a data structure to maintain the state
+of our program as we read the input stream.  It will keep the count of
+characters, words, and lines as well as a variable to track when we're
+in a word:
+
+    structure WordCount where
+      wordCount : Nat
+      lineCount : Nat
+      charCount : Nat
+      inWord    : Bool
+
+This is the way to define a product type with named fields in Lean,
+also known as a _structure_ as you can see from the `structure`
+keyword.  Each field definition contains a name on the left of the `:`
+and a type after.
+
+Lean will generate functions for us based on this structure and
+introduce them into the current scope.  Try adding the following to
+your source file:
+
+    #check WordCount.mk
+    #check WordCount.wordCount
+
+If you're using an editor with an interactive Lean mode/plugin this
+should display the type of those functions for you.  `#check` is a
+_command_ we can use to interact with Lean and ask it what the type of
+some expression is.  There are a handful of others that are very
+helpful to learn.

@@ -4,6 +4,9 @@ structure WordCount where
   charCount : Nat
   inWord : Bool
 
+#check WordCount.mk
+#check WordCount.wordCount
+
 instance : ToString WordCount where
   toString wc := s!"Characters: {wc.charCount} / Words: {wc.wordCount} / Lines: {wc.lineCount}"
 
