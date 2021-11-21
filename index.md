@@ -187,7 +187,7 @@ simple.
 First things first, create a new directory and initiate a project with
 Lake:
 
-    $ mkdir WordCount && cd WordCound && lake init
+    $ mkdir WordCount && cd WordCount && lake init
 
 The first thing we will need is a data structure to maintain the state
 of our program as we read the input stream.  It will keep the count of
