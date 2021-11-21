@@ -7,6 +7,13 @@ structure WordCount where
 #check WordCount.mk
 #check WordCount.wordCount
 
+def emptyWordCount : WordCount :=
+  { wordCount := 0
+  , lineCount := 1
+  , charCount := 0
+  , inWord := false
+  }
+
 instance : ToString WordCount where
   toString wc := s!"Characters: {wc.charCount} / Words: {wc.wordCount} / Lines: {wc.lineCount}"
 
@@ -35,5 +42,5 @@ partial def IOfoldl {α} (f : α → UInt8 → α) (x : α) : IO α := do
     return x
 
 def main : IO Unit := do
-  let wc <- IOfoldl countChar (WordCount.mk 0 1 0 false)
+  let wc <- IOfoldl countChar emptyWordCount
   IO.println wc

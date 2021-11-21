@@ -205,9 +205,9 @@ also known as a _structure_ as you can see from the `structure`
 keyword.  Each field definition contains a name on the left of the `:`
 and a type after.
 
-Lean will generate functions for us based on this structure and
-introduce them into the current scope.  Try adding the following to
-your source file:
+When Lean sees a `structure` it will create a new type, _namespace_
+(more on them later), and a few functions in that namespace.  Try
+adding the following to your source file:
 
     #check WordCount.mk
     #check WordCount.wordCount
@@ -215,5 +215,320 @@ your source file:
 If you're using an editor with an interactive Lean mode/plugin this
 should display the type of those functions for you.  `#check` is a
 _command_ we can use to interact with Lean and ask it what the type of
-some expression is.  There are a handful of others that are very
-helpful to learn.
+some expression is.  It acts like a comment as these lines will be
+ignored when compiling your program.  There are a handful of others
+that are very helpful to learn which we will introduce as we go
+along.
+
+The first function there, `WordCount.mk` is a convenient function for
+constructing values of the type, `WordCount`:
+
+    def emptyWordCount := WordCount.mk 0 1 0 false
+
+Which would be fine for our case.  However if you prefer to name the
+fields in your code you can also write it using anonymous structure
+syntax:
+
+    def emptyWordCount : WordCount :=
+      { wordCount := 0
+      , lineCount := 1
+      , charCount := 0
+      , inWord    := false
+      }
+
+We introduce a new keyword here, `def`, which introduces new
+_definitions_.  These can be functions, types, or values.  In the
+first example we give a definition without specifying a type: Lean can
+infer the type of this definition from the constructor we use in the
+expression.
+
+In the second example using the anonymous structure syntax, Lean
+doesn't know what the type of our definition is.  We provide one in an
+annotation on the definition after the `:`.
+
+### Our First Function ###
+
+Our plan of attack for this program is to update the state as we visit
+each character in the stream.  That means we need a function that
+takes an accumulator state and one byte of input to compute the next
+state.  Let's first write the definition of this function:
+
+    def countChar (wc : WordCount) (c : UInt8) : WordCount :=
+        sorry
+
+We use `sorry` here like `undefined`.  It's technically an error to
+leave it in and our program won't check if we do.  We're just telling
+Lean, "sorry, I don't know how to define this right now."  We can
+still check other parts of the program in the meantime.
+
+This is the common way to define pure functions in Lean.  Most simple
+functions you write will probably look something like this.  Each
+parameter is contained in a pair of parenthesis and the final `:`
+allows us to annotate the type of this definition... in the case of a
+function, the "return type" if you will.  You can group like-typed
+parameters in a single parenthesis like `(x y : Int)` as needed.
+
+If you are familiar with Haskell or ML-style type annotations this is
+equivalent to:
+
+    countChar :: WordCount -> UInt8 -> WordCount
+
+If you are coming from C++ or Java:
+
+    WordCount countChar(WordCount wc, uint8_t char)
+
+Let's replace that `sorry` with a term that does what we want.  Let's
+start by increasing the character count:
+
+    def countChar (wc : WordCount) (c : UInt8) : WordCount :=
+      let wc := { wc with charCount := wc.charCount + 1 }
+      sorry
+
+Here we have an example of a `let` expression which binds a value to a
+name for this expression.  In this case we're rebinding `wc`!  The
+parameter `wc` doesn't change however.  It's still immutable.  The
+reasons why this still works has to do with how Lean can elaborate
+expressions.  Just know that we're not mutating the original parameter
+`wc` and that if we rename our let-bound `wc` to `wc'` we can still
+access the parameter `wc` in the rest of the expression.
+
+The next part of this is using the structure update syntax.  Here
+we're saying that we want a structure with the same values as `wc`
+_except_ we want the `charCount` field to be this incremented value
+from the prior state.
+
+Moving on, let's add the state transition from being, "in a word" to
+being, "out of a word":
+
+    def countChar (wc : WordCount) (c : UInt8) : WordCount :=
+      let wc := { wc with charCount := wc.charCount + 1 }
+      if c == 32
+      then { wc with inWord := false }
+      else sorry
+
+We have conditionals in Lean as you would expect.  The `if` here is an
+expression and is in the body of the `let` expression.  In the case
+where the character we're interrogating is an ASCII _space_ then we
+can transition out of a word as our next state.  Otherwise...
+
+    def countChar (wc : WordCount) (c : UInt8) : WordCount :=
+      let wc := { wc with charCount := wc.charCount + 1 }
+      if c == 32
+      then { wc with inWord := false }
+      else if c == 10
+      then { wc with
+              lineCount := wc.lineCount + 1
+              inWord := false }
+      else sorry
+
+We ask the character if it is an ASCII _newline_.  If it is we return
+the next state as you would expect.  And lastly we need to add the
+transition _into_ a word:
+
+    def countChar (wc : WordCount) (c : UInt8) : WordCount :=
+      let wc := { wc with charCount := wc.charCount + 1 }
+      if c == 32
+      then { wc with inWord := false }
+      else if c == 10
+      then { wc with
+              lineCount := wc.lineCount + 1
+              inWord := false }
+      else if wc.inWord == true
+           then wc
+           else { wc with wordCount := wc.wordCount + 1,
+                          inWord := true }
+
+So to recap: we can `let` bind names into a new scope.  We can create
+new structures from existing ones with new values for the fields we
+care about using the structure update syntax, and we have `if`
+expressions for interrogating boolean values.
+
+### IO ###
+
+The next thing we need to do is read our stream of bytes.  We've
+already _seen_ the `IO` type in our, "Hello, world!" program.  It is
+within the body of a function that returns this type in which our
+programs can use other `IO` returning functions.  And the main entry
+point to every Lean program is such a function:
+
+    def main : IO Unit := sorry
+
+Anything where you want to read foreign memory, write to a stream
+(such as using `IO.println`), fork a thread, or read bytes from a
+stream: they all have to be done in an `IO`-returning function.
+
+Lean 4 is evolving and as of this writing there is a spartan library
+of `IO` functions for reading and writing streams, creating processes,
+sampling random generators, and more.  Our program will need to read
+from a stream and _fold_ our `countChar` function over that stream
+from our initial `emptyState` that we defined earlier.  To do this we
+define a helper function:
+
+    partial def IOfoldl {α} (f : α → UInt8 → α) (x : α) : IO α :=
+      sorry
+
+Here we see the `partial` keyword.  By default Lean only allows _total
+functions_.  That means that we can only define functions where all
+inputs map to an output _and_ that also means that the function will
+always terminate.  This is useful for a lot of reasons but in programs
+we cannot always make this guarantee.  Lean 4 allows us to say, "this
+function is partial, but trust me I will handle it."
+
+We also have this funny-looking, `{α}` thing.  You can think of this
+as a _type variable_.  Lean 4 is a dependently-typed language and
+there's more to it than this but for now it is a variable that stands
+in _for some type_ in the rest of our function definition.  When we
+call this function we will pass in a type for `{α}` which will
+determine what type it is.  This is basically how we define
+_polymorphic_ functions in Lean 4.
+
+You can write `α` in Emacs using the key-sequence `\a` and pressing
+`Enter`.  It is similar in VS Code as well.  Lean is not shy about
+using unicode characters in a Lean source file.  However if you do not
+like them most have ASCII equivalents as we will see.
+
+Next we have:
+
+    (f : α → UInt8 → α)
+
+This defines a function parameter, `f` whose type is: `α → UInt8 → α`.
+You can type the `→` using `\r` and pressing `Enter`.  If you're using
+another editor other than the officially supported ones then you're on
+your own.
+
+We use this function parameter in `IOfoldl` as our _fold_ function.
+If you look at the type of `countChar` but replace the `α`'s with
+`WordCount` you will see it has the same shape and thus will be a
+valid fit here.
+
+See if you can figure out what the rest of the function signature for
+`IOfoldl` means.
+
+Here is the complete definition:
+
+    partial def IOfoldl {α} (f : α → UInt8 → α) (x : α) : IO α := do
+      let stdin ← IO.getStdin
+      let stop ← stdin.isEof
+      if !stop
+      then
+        let cs ← stdin.read 5
+        let x' := List.foldl f x cs.toList
+        IOfoldl f x'
+      else
+        return x
+
+Since this is a function returning an `IO` value we can use other `IO`
+functions in its body.  We also see `do` notation here for the first
+time.  It is similar to Haskell's `do` notation.  It allows us to
+interleave `IO` actions together where later `IO` functions can depend
+on the values of prior `IO` functions.  The first such function we
+see:
+
+    let stdin ← IO.getStdin
+
+The `←` here (typed `\l` then `Enter` or `<-` in ASCII) _binds_ the
+result of `IO.getStdin` to the let-bound name, `stdin`.  We need to
+use the left-arrow to do this _binding_ when we want to get the result
+of an `IO` function.  If we use `=` we will be binding the `IO α` and
+not the `α` as we want in this case.
+
+The type of the value bound to `stdin` is `IO.FS.Stream`.  This is a
+structure with a few fields containing useful functions for working
+with file streams.  You can find it's definition in the Lean 4 source
+tree under: `src/Init/System/IO.lean`:
+
+    structure FS.Stream where
+      isEof   : IO Bool
+      flush   : IO Unit
+      read    : USize → IO ByteArray
+      write   : ByteArray → IO Unit
+      getLine : IO String
+      putStr  : String → IO Unit
+
+We bind the `isEof` result to `stop` in our function so that we know
+when we've reached the end of the stream and can stop processing any
+more characters.  This is basically why this function has to be
+`partial`: Lean doesn't know anything about the input stream: how long
+it is, etc.  So we cannot know if this function will ever terminate.
+Fortunately that won't stop us from writing useful programs in Lean 4.
+
+If there is more stream to process we use the `read` function to read
+in 5 bytes from the stream at a time.  We then determine the next
+state by accumulating our state with `f` over those 5 bytes and loop
+on `IOfoldl` with our f and the newly computed state.
+
+### Finishing it off ###
+
+The last thing we need to do is to compose together our `countChar`
+function with `IOfoldl` and print out the results to the user.
+
+First let's add a way to show the word count state to the user.  Below
+our definition of the `WordCount` structure add the following:
+
+Let's define one more function in `WordCount.lean`:
+
+    instance : ToString WordCount where
+      toString wc := s!"Characters: {wc.charCount} / Words: {wc.wordCount} / Lines: {wc.lineCount}"
+
+Lean 4 has type-classes much like Haskell.  We will learn more about
+them later but for now this is how you define a common one to convert
+a value of a type to a `String` representation.  It uses Lean 4's
+string interpolation feature which is nice and concise.
+
+Finally we can define `run`:
+
+    def run : IO Unit := do
+      let wc <- IOfoldl countChar emptyWordCount
+      IO.println wc
+
+And update our `Main.lean` to look like this:
+
+    import WordCount
+
+    def main : IO Unit := run
+
+We can then go to the command line and build our project from the
+project root:
+
+    $ lake build
+
+And we can run it like this:
+
+    $ echo "The quick brown fox" | ./build/bin/WordCount
+    Characters: 19 / Words: 4 / Lines: 1
+
+Which we can observe is similar to the results we would get with the
+traditional `wc` program packaged with most Unix-like systems.  What
+may vary is the value of the "line count."  Depending on which `wc`
+you use this will be `0` or `1` but neither is wrong.  In our program
+we decided that even if we do not encounter a _newline_ character, we
+consider there to always be at least 1 _line_ of input.
+
+### Conclusion ###
+
+We can write simple, standard Unix-like programs in Lean 4.
+
+We learned how to define `structure` data structures, pure functions,
+partial functions, and how to read and write to streams in `IO`.
+
+Our program is also rather concise.  It is also comparable in
+performance to my systems `wc` program!  In my totally non-scientific
+benchmark, I use https://www.gutenberg.org/files/2701/2701-0.txt as
+input for both programs.
+
+My system's `wc` returns:
+
+    $ time 'cat ~/Downloads/moby_dick.txt | wc'
+      44632  215864 1276235
+      6.120 secs
+
+And our Lean 4 version:
+
+    $ time 'cat ~/Downloads/moby_dick.txt | ./build/bin/WordCount'
+    Characters: 1276235 / Words: 215864 / Lines: 44633
+    6.240 secs
+
+This is on a `Intel© Core™ i5-5300U CPU @ 2.30GHz × 2` with 8GB of RAM
+on `5.4.0-89-generic` of Linux.
+
+Not bad!
