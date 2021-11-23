@@ -411,8 +411,8 @@ Here is the complete definition:
       let stop ← stdin.isEof
       if !stop
       then
-        let cs ← stdin.read 5
-        let x' := List.foldl f x cs.toList
+        let cs ← stdin.read 4096
+        let x' := ByteArray.foldl f x cs
         IOfoldl f x'
       else
         return x
@@ -511,24 +511,36 @@ We can write simple, standard Unix-like programs in Lean 4.
 We learned how to define `structure` data structures, pure functions,
 partial functions, and how to read and write to streams in `IO`.
 
-Our program is also rather concise.  It is also comparable in
-performance to my systems `wc` program!  In my totally non-scientific
-benchmark, I use https://www.gutenberg.org/files/2701/2701-0.txt as
-input for both programs.
+Our program is also rather concise.  It is also not too far off in
+performance compared to my systems `wc` program!  In my totally
+non-scientific benchmark, I use
+https://www.gutenberg.org/files/2701/2701-0.txt as input for both
+programs.
 
 My system's `wc` returns:
 
-    $ time 'cat ~/Downloads/moby_dick.txt | wc'
-      44632  215864 1276235
-      6.120 secs
+    $ time cat ~/Downloads/moby_dick.txt | wc
+    22316  215864 1276235
+
+    real    0m0.020s
+    user    0m0.026s
+    sys     0m0.001s
 
 And our Lean 4 version:
 
-    $ time 'cat ~/Downloads/moby_dick.txt | ./build/bin/WordCount'
-    Characters: 1276235 / Words: 215864 / Lines: 44633
-    6.240 secs
+    $ time cat ~/Downloads/moby_dick.txt | ./build/bin/WordCount
+    Characters: 1276235 / Words: 218951 / Lines: 22317
+
+    real    0m0.043s
+    user    0m0.039s
+    sys     0m0.011s
 
 This is on a `Intel© Core™ i5-5300U CPU @ 2.30GHz × 2` with 8GB of RAM
 on `5.4.0-89-generic` of Linux.
 
-Not bad!
+We also notice that the word count is off for the same input between
+the two programs.  We've not faithfully translated `wc` here and there
+are probably a number of differences in our implementation.  This is
+also why our benchmark here isn't really an apples-to-apples
+comparison.  However we're just getting an idea of what's possible
+here and it seems like we could get pretty close with a bit of work.

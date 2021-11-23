@@ -35,8 +35,8 @@ partial def IOfoldl {α} (f : α → UInt8 → α) (x : α) : IO α := do
   let stop ← stdin.isEof
   if !stop
   then
-    let cs ← stdin.read 5
-    let x' := List.foldl f x cs.toList
+    let cs ← stdin.read 4096
+    let xs' := ByteArray.foldl f x cs
     IOfoldl f x'
   else
     return x
