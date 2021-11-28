@@ -529,7 +529,7 @@ My system's `wc` returns:
 And our Lean 4 version:
 
     $ time cat ~/Downloads/moby_dick.txt | ./build/bin/WordCount
-    Characters: 1276235 / Words: 218951 / Lines: 22317
+    Characters: 1276235 / Words: 215864 / Lines: 22317
 
     real    0m0.043s
     user    0m0.039s
@@ -538,9 +538,4 @@ And our Lean 4 version:
 This is on a `Intel© Core™ i5-5300U CPU @ 2.30GHz × 2` with 8GB of RAM
 on `5.4.0-89-generic` of Linux.
 
-We also notice that the word count is off for the same input between
-the two programs.  We've not faithfully translated `wc` here and there
-are probably a number of differences in our implementation.  This is
-also why our benchmark here isn't really an apples-to-apples
-comparison.  However we're just getting an idea of what's possible
-here and it seems like we could get pretty close with a bit of work.
+We get this without any optimization efforts on our part.  Not too bad!
