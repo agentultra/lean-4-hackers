@@ -19,7 +19,7 @@ instance : ToString WordCount where
 
 def countChar (wc : WordCount) (c : UInt8) : WordCount :=
   let wc := { wc with charCount := wc.charCount + 1 }
-  if c == 32
+  if (c == 32 || c == 13)
   then { wc with inWord := false }
   else if c == 10
   then { wc with
@@ -35,9 +35,9 @@ partial def IOfoldl {α} (f : α → UInt8 → α) (x : α) : IO α := do
   let stop ← stdin.isEof
   if !stop
   then
-    let cs ← stdin.read 5
-    let x' := List.foldl f x cs.toList
-    IOfoldl f x'
+    let cs ← stdin.read 4096
+    let xs' := ByteArray.foldl f x cs
+    IOfoldl f xs'
   else
     return x
 
