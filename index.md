@@ -313,7 +313,7 @@ can transition out of a word as our next state.  Otherwise...
 
     def countChar (wc : WordCount) (c : UInt8) : WordCount :=
       let wc := { wc with charCount := wc.charCount + 1 }
-      if c == 32
+      if (c == 32 || c == 13)
       then { wc with inWord := false }
       else if c == 10
       then { wc with
@@ -327,7 +327,7 @@ transition _into_ a word:
 
     def countChar (wc : WordCount) (c : UInt8) : WordCount :=
       let wc := { wc with charCount := wc.charCount + 1 }
-      if c == 32
+      if (c == 32 || c == 13)
       then { wc with inWord := false }
       else if c == 10
       then { wc with
