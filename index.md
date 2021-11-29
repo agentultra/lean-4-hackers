@@ -519,23 +519,26 @@ programs.
 
 My system's `wc` returns:
 
-    $ time cat ~/Downloads/moby_dick.txt | wc
+    $ cat ~/Downloads/moby_dick.txt | time wc
     22316  215864 1276235
-
-    real    0m0.020s
-    user    0m0.026s
-    sys     0m0.001s
+    0.01user 0.00system 0:00.01elapsed 94%CPU (0avgtext+0avgdata 2120maxresident)k
+    0inputs+0outputs (0major+87minor)pagefaults 0swaps
 
 And our Lean 4 version:
 
-    $ time cat ~/Downloads/moby_dick.txt | ./build/bin/WordCount
+    $ cat ~/Downloads/moby_dick.txt | time ./build/bin/WordCount
     Characters: 1276235 / Words: 215864 / Lines: 22317
-
-    real    0m0.043s
-    user    0m0.039s
-    sys     0m0.011s
+    0.03user 0.00system 0:00.04elapsed 100%CPU (0avgtext+0avgdata 9908maxresident)k
+    0inputs+0outputs (0major+1251minor)pagefaults 0swaps
 
 This is on a `Intel© Core™ i5-5300U CPU @ 2.30GHz × 2` with 8GB of RAM
 on `5.4.0-89-generic` of Linux.
 
-We get this without any optimization efforts on our part.  Not too bad!
+We get this without any optimization efforts on our part.  Not too
+bad!  Notice we do get a tiny bit more memory usage, to be expected as
+we're doing some work with reference counting that my system `wc`
+doesn't do.  Also worth noting that this isn't a POSIX compliant
+implementation of `wc` and isn't doing quite as much work to handle
+different input types and options that would be required.  However it
+seems reasonable that with a little more effort we could be POSIX
+compliant and maintain a respectable amount of performance.
