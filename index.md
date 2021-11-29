@@ -453,9 +453,9 @@ it is, etc.  So we cannot know if this function will ever terminate.
 Fortunately that won't stop us from writing useful programs in Lean 4.
 
 If there is more stream to process we use the `read` function to read
-in 5 bytes from the stream at a time.  We then determine the next
-state by accumulating our state with `f` over those 5 bytes and loop
-on `IOfoldl` with our f and the newly computed state.
+in 4096 bytes from the stream at a time.  We then determine the next
+state by accumulating our state with `f` over those bytes and loop on
+`IOfoldl` with our f and the newly computed state.
 
 ### Finishing it off ###
 
